@@ -12,18 +12,71 @@
         } \
     } while (0)
 
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <goal> <filename>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
 
-typedef struct {
-    double *coordinates;
-} point;
+    const char* goal = argv[1];
+    const char* filename = argv[2];
 
-double** sym(point* points, int n, int d);
-double euclideanDistance(double* p, double* q, int d);
-void printMatrix(double** matrix, int n);
+    int numPoints, dimensions;
+    point* points = readPointsFromFile(filename, &numPoints, &dimensions);
+    if (!points) {
+        fprintf(stderr, "An Error Has Occurred\n");
+        return EXIT_FAILURE;
+    }
 
+    double** matrix = NULL;
 
+    if (strcmp(goal, "sym") == 0) {
+        matrix = sym(points, numPoints, dimensions);
+    } else if (strcmp(goal, "ddg") == 0) {
+        double** A = sym(points, numPoints, dimensions);
+        matrix = ddg(A, numPoints);
+        // Free the memory for A after using it
+        for (int i = 0; i < numPoints; i++) {
+            free(A[i]);
+        }
+        free(A);
+    } else if (strcmp(goal, "norm") == 0) {
+        double** A = sym(points, numPoints, dimensions);
+        double** D = ddg(A, numPoints);
+        matrix = norm(A, D, numPoints);
+        // Free the memory for A and D after using them
+        for (int i = 0; i < numPoints; i++) {
+            free(A[i]);
+            free(D[i]);
+        }
+        free(A);
+        free(D);
+    } else {
+        fprintf(stderr, "Invalid goal specified\n");
+        freePoints(points, numPoints);
+        return EXIT_FAILURE;
+    }
 
+    // Print the resulting matrix
+    for (int i = 0; i < numPoints; i++) {
+        for (int j = 0; j < numPoints; j++) {
+            printf("%.4f", matrix[i][j]);
+            if (j < numPoints - 1) {
+                printf(",");
+            }
+        }
+        printf("\n");
+    }
 
+    // Free the memory for the matrix and points
+    for (int i = 0; i < numPoints; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
+    freePoints(points, numPoints);
+
+    return EXIT_SUCCESS;
+}
 double euclideanDistance(double* p, double* q, int d) {
     double diff, sum = 0.0;
     int i;
@@ -100,10 +153,10 @@ double** norm(double** A, double** D, int n) {
 
 void printMatrix(double** matrix, int n) {
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%f ", matrix[i][j]);
+        for (int j = 0; j < n-1; j++) {
+            printf("%f,", matrix[i][j]);
         }
-        printf("\n");
+        printf("%f\n", matrix[i][n]);
     }
 }
 
