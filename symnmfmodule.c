@@ -7,7 +7,18 @@
 #include <ctype.h>
 #include "symnmf.h"
 
-
+static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
+{
+    PyObject* py_matrix = PyList_New(numPoints);
+    for (int i = 0; i < numPoints; i++) {
+        PyObject* row = PyList_New(numPoints);
+        for (int j = 0; j < numPoints; j++) {
+            PyList_SetItem(row, j, PyFloat_FromDouble(matrix[i][j]));
+        }
+        PyList_SetItem(py_matrix, i, row);
+    }
+    return py_matrix;
+}
 
 static PyObject* fit(PyObject *self, PyObject *args)
 {
@@ -17,7 +28,7 @@ static PyObject* fit(PyObject *self, PyObject *args)
     double** matrix;
     int numPoints, dimensions;
     /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
-    if(!PyArg_ParseTuple(args, "sO|iOO", &goal, &dataPoint,&k, &H, &W)) {
+    if(!PyArg_ParseTuple(args, "siiO|iOO", &goal, &numPoints, &dimensions, &dataPoint ,&k, &H, &W)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
@@ -41,16 +52,12 @@ static PyObject* fit(PyObject *self, PyObject *args)
         }
         free(A);
         free(D);
+    }else if (strcmp(goal, "symnmf") == 0) {
+        //call H update function
     }
-    PyObject* py_matrix = PyList_New(numPoints);
-    for (int i = 0; i < numPoints; i++) {
-        PyObject* row = PyList_New(numPoints);
-        for (int j = 0; j < numPoints; j++) {
-            PyList_SetItem(row, j, PyFloat_FromDouble(matrix[i][j]));
-        }
-        PyList_SetItem(py_matrix, i, row);
-    }
-
+    
+   
+    PyObject* py_matrix = convertCMatrixToPyList(matrix,numPoints);
     // Free the C matrix and points
     for (int i = 0; i < numPoints; i++) {
         free(matrix[i]);
