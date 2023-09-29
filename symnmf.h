@@ -13,6 +13,5 @@ double** norm(double** A, double** D, int n);
 void printMatrix(double** matrix, int n);
 void printInvalidInputError(const char* message);
 void freePoints(point* points, int numPoints);
-//static PyObject *fit(PyObject *self, PyObject *args);
 
 #endif
