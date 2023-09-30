@@ -7,6 +7,26 @@
 #include <ctype.h>
 #include "symnmf.h"
 
+point* convertPyListToPoints(PyObject *pyList, int n, int d) {
+    point* points = (point*)malloc(n * sizeof(point));
+
+    /*Iterate over the outer list*/
+    for (int i = 0; i < n; i++) {
+        PyObject *innerList = PyList_GetItem(pyList, i);
+
+        /*Allocate memory for the coordinates of the point*/
+        points[i].coordinates = (double*)malloc(d * sizeof(double));
+
+        /*Iterate over the inner list*/
+        for (int j = 0; j < d; j++) {
+            PyObject *coordObj = PyList_GetItem(innerList, j);
+            points[i].coordinates[j] = PyFloat_AsDouble(coordObj);
+        }
+    }
+
+    return points;
+}
+
 static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
 {
     PyObject* py_matrix = PyList_New(numPoints);
@@ -20,70 +40,107 @@ static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
     return py_matrix;
 }
 
-static PyObject* fit(PyObject *self, PyObject *args)
+static PyObject* py_sym(PyObject *self, PyObject *args)
 {
-    PyObject *dataPoints, *W, *H;
-    int k;
-    const char *goal;
-    double** matrix;
+    PyObject *dataPoints;
     int numPoints, dimensions;
-    /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
-    if(!PyArg_ParseTuple(args, "siiO|iOO", &goal, &numPoints, &dimensions, &dataPoint ,&k, &H, &W)) {
+    PyObject* py_matrix;
+    point* points;
+    double** A;
+    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    if(strcmp(goal, "sym") == 0){
-        matrix = sym(points, numPoints, dimensions);
-    }else if (strcmp(goal, "ddg") == 0) {
-        double** A = sym(points, numPoints, dimensions);
-        matrix = ddg(A, numPoints);
-        for (int i = 0; i < numPoints; i++) {
-            free(A[i]);
-        }
-        free(A);
-    }else if (strcmp(goal, "norm") == 0) {
-        double** A = sym(points, numPoints, dimensions);
-        double** D = ddg(A, numPoints);
-        matrix = norm(A, D, numPoints);
-        // Free A and D after using
-        for (int i = 0; i < numPoints; i++) {
-            free(A[i]);
-            free(D[i]);
-        }
-        free(A);
-        free(D);
-    }else if (strcmp(goal, "symnmf") == 0) {
-        //call H update function
+    points = convertPyListToPoints(dataPoints, numPoints, dimensions);
+    A = sym(points, numPoints, dimensions);
+    py_matrix = convertCMatrixToPyList(A, numPoints);
+    freeMatrix(A, numPoints);
+    freePoints(points, numPoints);
+    return py_matrix;
+}
+
+static PyObject* py_ddg(PyObject *self, PyObject *args)
+{
+    PyObject *dataPoints;
+    int numPoints, dimensions;
+    double** A, D;
+    PyObject* py_matrix;
+    point* points;
+    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
+        return NULL; /* In the CPython API, a NULL value is never valid for a
+                        PyObject* so it is used to signal that an error has occurred. */
+    }
+    points = convertPyListToPoints(dataPoints, numPoints, dimensions);
+    A = sym(points, numPoints, dimensions);
+    D = ddg(A, numPoints);
+    py_matrix = convertCMatrixToPyList(D, numPoints);
+    freeMatrix(A, numPoints);
+    freeMatrix(D, numPoints);
+    freePoints(points, numPoints);
+    return py_matrix;
+}
+static PyObject* py_norm(PyObject *self, PyObject *args)
+{
+    PyObject *dataPoints;
+    int numPoints, dimensions;
+    double** A, D, N;
+    PyObject* py_matrix;
+    point* points;
+    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
+        return NULL; /* In the CPython API, a NULL value is never valid for a
+                        PyObject* so it is used to signal that an error has occurred. */
+    }
+    points = convertPyListToPoints(dataPoints, numPoints, dimensions);
+    A = sym(points, numPoints, dimensions);
+    D = ddg(A, numPoints);
+    N = norm(A, D, numPoints);
+    py_matrix = convertCMatrixToPyList(N, numPoints);
+    freeMatrix(A, numPoints);
+    freeMatrix(D, numPoints);
+    freeMatrix(N, numPoints);
+    freePoints(points, numPoints);
+    return py_matrix;
+}
+
+static PyObject* py_symnmf(PyObject *self, PyObject *args)
+{
+    PyObject *W, *H;
+    double** updatedH;
+    int k, numRows, numColums;
+    double eps;
+    /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
+    if(!PyArg_ParseTuple(args, "iiiOO",&k, &numRows, &numColums  &H, &W)) {
+        return NULL; /* In the CPython API, a NULL value is never valid for a
+                        PyObject* so it is used to signal that an error has occurred. */
     }
     
-   
-    PyObject* py_matrix = convertCMatrixToPyList(matrix,numPoints);
-    // Free the C matrix and points
-    for (int i = 0; i < numPoints; i++) {
-        free(matrix[i]);
-    }
-    free(matrix);
-    freePoints(points, numPoints);
+    /////////////////////////////////////////////////
+    // Call loop that chack H function update harer//
+    /////////////////////////////////////////////////
 
+    PyObject* py_matrix = convertCMatrixToPyList(updatedH ,numPoints);
+    // Free the C matrix and points
+    freeMatrix(updatedH, numRows);
     return py_matrix;   
 }
 
 static PyMethodDef SymNMFMethods[] = {
-    {"fit",
-     (PyCFunction) fit, 
-     METH_VARARGS, pyDoc_STR("Execute the SymNMF function based on the goal")},
+    {"sym",(PyCFunction) py_sym, METH_VARARGS, pyDoc_STR("Compute the similarity matrix")},
+    {"ddg",(PyCFunction) py_ddg, METH_VARARGS, pyDoc_STR("Compute the Diagonal Degree Matrix")},
+    {"norm",(PyCFunction) py_norm, METH_VARARGS, pyDoc_STR("Compute the normalized similarity matrix")},
+    {"symnmf", py_symnmf, METH_VARARGS, pyDoc_STR("Perform the full symNMF and return H")},
     {NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef symnmfmodule = {
     PyModuleDef_HEAD_INIT,
-    "symnmf",
+    "mysymnmf",
     NULL,
     -1,
     SymNMFMethods
 };
 
-PyMODINIT_FUNC PyInit_symnmf(void) {
+PyMODINIT_FUNC PyInit_mysymnmf(void) {
     PyObject *m;
     m = PyModule_Create(&symnmfmodule);
     if (!m){
