@@ -13,7 +13,7 @@ double** norm(double** A, double** D, int n);
 void printMatrix(double** matrix, int n);
 void printInvalidInputError(const char* message);
 void freePoints(point* points, int numPoints);
-void freeMatrix(ouble** matrix, int numPoints);
+void freeMatrix(double** matrix, int numPoints);
 double squaredFrobeniusNorm(double** matrix, int m, int n);
 
 #endif
