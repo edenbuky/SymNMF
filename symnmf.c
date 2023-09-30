@@ -69,10 +69,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Free the memory for the matrix and points
-    for (int i = 0; i < numPoints; i++) {
-        free(matrix[i]);
-    }
-    free(matrix);
+    freeMatrix(matrix,numPoints);
     freePoints(points, numPoints);
 
     return EXIT_SUCCESS;
@@ -228,6 +225,16 @@ void freePoints(point* points, int numPoints) {
     }
 
     free(points);
+}
+void freeMatrix(ouble** matrix, int numPoints) {
+    int i;
+    if (matrix == NULL) {
+        return;
+    }
+    for (i = 0; i < numPoints; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
 }
 void printInvalidInputError(const char* message) {
     printf("%s\n", message);
