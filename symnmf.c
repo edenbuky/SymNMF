@@ -240,4 +240,13 @@ void printInvalidInputError(const char* message) {
     printf("%s\n", message);
     exit(1);
 }
+double squaredFrobeniusNorm(double** matrix, int m, int n) {
+    double sum = 0.0;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            sum += matrix[i][j] * matrix[i][j];
+        }
+    }
+    return sum;
+}
 
