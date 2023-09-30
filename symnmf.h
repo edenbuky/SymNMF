@@ -13,5 +13,6 @@ double** norm(double** A, double** D, int n);
 void printMatrix(double** matrix, int n);
 void printInvalidInputError(const char* message);
 void freePoints(point* points, int numPoints);
+void freeMatrix(ouble** matrix, int numPoints);
 
 #endif
