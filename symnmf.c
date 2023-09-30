@@ -226,7 +226,7 @@ void freePoints(point* points, int numPoints) {
 
     free(points);
 }
-void freeMatrix(ouble** matrix, int numPoints) {
+void freeMatrix(double** matrix, int numPoints) {
     int i;
     if (matrix == NULL) {
         return;
