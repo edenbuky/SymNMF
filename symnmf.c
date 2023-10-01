@@ -129,22 +129,15 @@ double** ddg(double** A, int n) {
 }
 
 double** norm(double** A, double** D, int n) {
-    // Allocate memory for the normalized similarity matrix W
-    double** W = (double**)malloc(n * sizeof(double*));
-    CHECK_MEMORY_ALLOCATION(W);
-    for (int i = 0; i < n; i++) {
-        W[i] = (double*)malloc(n * sizeof(double));
-        CHECK_MEMORY_ALLOCATION(W[i]);
-    }
 
     // Calculate the normalized similarity matrix W
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            W[i][j] = A[i][j] / (sqrt(D[i][i]) * sqrt(D[j][j]));
-        }
-    }
+    matrix * mA = createMatrix(A, n, n);
+    matrix * mD = createMatrix(D, n, n);
+    diagPow(mD);
+    matrix * tmp = matMul(mD, mA);
+    matrix * W = matMul(tmp, mD);
 
-    return W;
+    return W -> data;
 }
 
 
@@ -240,13 +233,162 @@ void printInvalidInputError(const char* message) {
     printf("%s\n", message);
     exit(1);
 }
-double squaredFrobeniusNorm(double** matrix, int m, int n) {
+double squaredFrobeniusNorm(matrix* m1, matrix* m2) {
     double sum = 0.0;
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            sum += matrix[i][j] * matrix[i][j];
+    for (int i = 0; i < m1->r; i++) {
+        for (int j = 0; j < m1->c; j++) {
+            double tmp = ((m1->data)[i][j] - (m2->data)[i][j]);
+            sum += (tmp * tmp);
         }
     }
     return sum;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct matrix{
+    int r;
+    int c;
+    double ** data;
+};
+typedef struct matrix matrix;
+
+double get(matrix* mat, int i, int j){
+    return (mat->data)[i][j];
+}
+
+void set(matrix* mat, int i, int j, double val){
+    (mat->data)[i][j] = val;
+}
+
+matrix * create_matrix(double ** arr, int r, int c){
+    matrix * new = (matrix*)malloc(sizeof(matrix));
+    new -> r = r;
+    new -> c = c;
+    new -> data = arr;
+    return new;
+}
+
+double mulSum(double* arr1, double* arr2, int l){
+   int i;
+   int cnt = 0;
+   for(i = 0; i < l; i++){
+       cnt += arr1[i] * arr2[i];
+   }
+   return cnt;
+}
+
+double * getCol(matrix* mat, int index){
+    int i;
+    int len = mat->r;
+    double * col = (double*)malloc(len * sizeof(double));
+    for(i = 0; i < len; i++){
+        col[i] = get(mat, i, index);
+    }
+    return col;
+}
+
+void printMat(matrix * m){
+    int i,j;
+    for(i = 0; i < m->r; i++){
+        for(j = 0; j< m->c; j++){
+            printf("%.4f \t", (m->data)[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+matrix* matMul(matrix* m1, matrix* m2){
+    int i, j;
+    double * col;
+    int r1 = m1->r;
+    int r2 = m2->r;
+    int c1 = m1->c;
+    int c2 = m2->c;
+    
+    if(c1 != r2){
+        printf("sizes dont match");
+    }
+    double** ans = (double**)malloc(r1 * sizeof(double*));
+    for (i = 0; i < r1; i++){
+        ans[i] = (double*)malloc(c2 * sizeof(double));
+    }
+    
+    for (i = 0; i < r1; i++){
+        for (j = 0; j < c2; j++){
+            col = getCol(m2, j);
+            ans[i][j] = mulSum((m1->data)[i], col, r2);
+        }
+    }
+    return create_matrix(ans, r1, c2);
+}
+
+void diagPow(matrix * m){
+    //power of -0.5 to diagonal matrix
+    int i, tmp;
+    for(i = 0; i < m->c; i++){
+        tmp = 1/sqrt((m->data)[i][i]);
+        (m->data)[i][i] = tmp;
+    }
+
+}
+
+matrix* transpose(matrix* m){
+    int r = m->c;
+    int c = m->r;
+    double** arr = (double**)malloc(r * sizeof(double*));
+    for (i = 0; i < r; i++){
+        arr[i] = (double*)malloc(c * sizeof(double));
+    }
+     for (i = 0; i < r; i++)
+        for (j = 0; j < c; j++)
+            arr[i][j] = (m->data)[j][i];
+    
+    return create_matrix(arr, r, c);
+    
+}
+
+matrix* oneIter(matrix * H, matrix * W){
+    double b = 0.5;
+    double tmp;
+    int r = H->r;
+    int c = H->c;
+
+    matrix* mone = matMul(W,H);
+    matrix* H_t = transpose(H);
+    matrix* mehane = matMul(H, H_t);
+    mehane = matMul(mehane, H);
+
+    double ** top = mone -> data;
+    double ** bottom = mehane -> data;
+    
+    double** arr = (double**)malloc(r * sizeof(double*));
+    for (i = 0; i < r; i++){
+        arr[i] = (double*)malloc(c * sizeof(double));
+    }
+     for (i = 0; i < r; i++){
+        for (j = 0; j < c; j++){
+            tmp = b * top[i][j] / bottom[i][j];
+            arr[i][j] = 1 - b + tmp;
+        }
+     }
+     return create_matrix(arr, r, c);
+
+}
+
+matrix * updateH(matrix *H, matrix *W. int iter, double epsilon){
+    matrix* H_old = &H;
+     matrix * H_new = NULL;
+    do{
+        H_new = oneIter(H_old, W);
+        double fNorm =  squaredFrobeniusNorm(H_new, H_old);
+        iter --;
+        H_old = H_new;
+    }
+    while((sqrt(fNorm) >= epsilon*epsilon) || (iter > 0));
+
+    return H_new;
+
+}
+
 
