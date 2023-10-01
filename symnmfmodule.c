@@ -138,20 +138,27 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
 static PyObject* py_symnmf(PyObject *self, PyObject *args)
 {
     PyObject *W, *H;
-    double** updatedH;
+    double** arrayH, arrayW;
     int k, numRows, numColums;
     double eps;
+    matrix* matH, matW newH;
     /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
-    if(!PyArg_ParseTuple(args, "iiiOO",&k, &numRows, &numColums  &H, &W)) {
+    if(!PyArg_ParseTuple(args, "iiOiO", &numRows, &numColums , &H, &W)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
+    arrayH = convertPyListToArray(*H,numRows,numColums);
+    arrayW = convertPyListToArray(*W,numRows,numRows);
     
-    /////////////////////////////////////////////////
-    // Call loop that chack H function update harer//
-    /////////////////////////////////////////////////
+    matH = create_matrix(*arrayH, numRows, numColums);
+    matW = create_matrix(*arrayW, numRows, numRows);
+    convertCMatrixToPyList(arrayH);
+    convertCMatrixToPyList(arrayW);
+    newH = updateH(*matH, *matW, ITER, EPSILON);
 
-    PyObject* py_matrix = convertCMatrixToPyList(updatedH ,numPoints);
+    // convert newH to pyList 
+    
+    //PyObject* py_matrix = convertCMatrixToPyList(newH ,numPoints);
     // Free the C matrix and points
     freeMatrix(updatedH, numRows);
     return py_matrix;   
