@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
         matrix = sym(points, numPoints, dimensions);
     } else if (strcmp(goal, "ddg") == 0) {
         double** A = sym(points, numPoints, dimensions);
-        matrix = ddg(A, numPoints);
+        matrix = ddg(A);
         // Free the memory for A after using it
         for (int i = 0; i < numPoints; i++) {
             free(A[i]);
@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
         free(A);
     } else if (strcmp(goal, "norm") == 0) {
         double** A = sym(points, numPoints, dimensions);
-        double** D = ddg(A, numPoints);
-        matrix = norm(A, D, numPoints);
+        double** D = ddg(A);
+        matrix = norm(A, D);
         // Free the memory for A and D after using them
         for (int i = 0; i < numPoints; i++) {
             free(A[i]);
@@ -129,8 +129,9 @@ matrix * sym(point* points, int n, int d) {
     return create_matrix(A, n, n);
 }
 
-matrix * ddg(matrix* A, int n) {
-    int i,j;
+matrix * ddg(matrix* A) {
+    int i,j,n;
+    n = A->c;
     // Allocate memory for the diagonal degree matrix D
     double** D = build2Darray(n,n);
     if(D == NULL){
@@ -149,8 +150,9 @@ matrix * ddg(matrix* A, int n) {
     return create_matrix(D, n, n);
 }
 
-matrix* norm(matrix* A, matrix* D, int n) {
+matrix* norm(matrix* A, matrix* D) {
     // Calculate the normalized similarity matrix W
+    int n = A->c;
     diagPow(D);
     matrix * tmp = matMul(D, A);
     matrix * W = matMul(tmp, D);

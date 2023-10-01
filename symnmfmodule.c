@@ -9,14 +9,23 @@
 
 
 point* convertPyListToPoints(PyObject *pyList, int n, int d) {
+    int i,j;
     point* points = (point*)malloc(n * sizeof(point));
-
+    if(checkMemoryAllocation(points) == 0){
+        exit(1);
+    }
     /*Iterate over the outer list*/
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         PyObject *innerList = PyList_GetItem(pyList, i);
 
         /*Allocate memory for the coordinates of the point*/
         points[i].coordinates = (double*)malloc(d * sizeof(double));
+        if(checkMemoryAllocation(points[i].coordinates) == 0){
+            for(j=0; j < i; j++){
+                free(points[j].coordinates);
+            }
+            free(points);
+        }
 
         /*Iterate over the inner list*/
         for (int j = 0; j < d; j++) {
@@ -24,10 +33,12 @@ point* convertPyListToPoints(PyObject *pyList, int n, int d) {
             points[i].coordinates[j] = PyFloat_AsDouble(coordObj);
         }
     }
-
     return points;
 }
+
+
 point* convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
+    int i,j;
     *numRows = PyList_Size(pyList);
     if (*numRows <= 0) {
         return NULL;
@@ -38,15 +49,23 @@ point* convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
         return NULL;
     }
     double** array = (double**)malloc(*numRows * sizeof(double*));
-    CHECK_MEMORY_ALLOCATION(array);
+    if(checkMemoryAllocation(array)==0){
+        return NULL;
+    }
     /*Iterate over the outer list*/
-    for (int i = 0; i < numRows; i++) {
+    for (i = 0; i < numRows; i++) {
         PyObject *innerList = PyList_GetItem(pyList, i);
         array[i] = (double*)malloc(*numCols * sizeof(double));
-        CHECK_MEMORY_ALLOCATION(array[i]);
+        if(checkMemoryAllocation(array[i]) == 0){
+            for(j = 0; j < i; j++){
+                free(array[j]);
+            }
+            free(array);
+            return NULL;
+        }
 
         /*Iterate over the inner list*/
-        for (int j = 0; j < numCols; j++) {
+        for (j = 0; j < numCols; j++) {
             PyObject *coordObj = PyList_GetItem(innerList, j);
             array[i][j] = PyFloat_AsDouble(coordObj);
         }
@@ -54,13 +73,17 @@ point* convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
     return array;
 }
 
-static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
+static PyObject* convertCMatrixToPyList(matrix * m)
 {
-    PyObject* py_matrix = PyList_New(numPoints);
-    for (int i = 0; i < numPoints; i++) {
-        PyObject* row = PyList_New(numPoints);
-        for (int j = 0; j < numPoints; j++) {
-            PyList_SetItem(row, j, PyFloat_FromDouble(matrix[i][j]));
+    int i,j;
+    int r = m -> r;
+    int c = m->c;
+
+    PyObject* py_matrix = PyList_New(r);
+    for (i = 0; i < r; i++) {
+        PyObject* row = PyList_New(c);
+        for (j = 0; j < c; j++) {
+            PyList_SetItem(row, j, PyFloat_FromDouble((m->data)[i][j]));
         }
         PyList_SetItem(py_matrix, i, row);
     }
@@ -73,7 +96,7 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     int numPoints, dimensions;
     PyObject* py_matrix;
     point* points;
-    double** A;
+    matrix* A;
     if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
@@ -82,8 +105,8 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     dimensions = PyList_size(dataPoints[i]);
     points = convertPyListToPoints(dataPoints,numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
-    py_matrix = convertCMatrixToPyList(A, numPoints);
-    freeArray(A, numPoints);
+    py_matrix = convertCMatrixToPyList(A);
+    freeMatrix(A);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -92,7 +115,7 @@ static PyObject* py_ddg(PyObject *self, PyObject *args)
 {
     PyObject *dataPoints;
     int numPoints, dimensions;
-    double** A, D;
+    matrix * A, D;
     PyObject* py_matrix;
     point* points;
     if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
@@ -103,10 +126,10 @@ static PyObject* py_ddg(PyObject *self, PyObject *args)
     dimensions = PyList_size(dataPoints[i]);
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
-    D = ddg(A, numPoints);
-    py_matrix = convertCMatrixToPyList(D, numPoints);
-    freeArray(A, numPoints);
-    freeArray(D, numPoints);
+    D = ddg(A);
+    py_matrix = convertCMatrixToPyList(D);
+    freeMatrix(A);
+    freeMatrix(D);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -114,7 +137,7 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
 {
     PyObject *dataPoints;
     int numPoints, dimensions;
-    double** A, D, N;
+    matrix* A, D, N;
     PyObject* py_matrix;
     point* points;
     if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
@@ -125,12 +148,12 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
     dimensions = PyList_size(dataPoints[i]);
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
-    D = ddg(A, numPoints);
-    N = norm(A, D, numPoints);
-    py_matrix = convertCMatrixToPyList(N, numPoints);
-    freeArray(A, numPoints);
-    freeArray(D, numPoints);
-    freeArray(N, numPoints);
+    D = ddg(A);
+    N = norm(A, D);
+    py_matrix = convertCMatrixToPyList(N);
+    freeMatrix(A);
+    freeMatrix(D);
+    freeMatrix(N);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -147,20 +170,20 @@ static PyObject* py_symnmf(PyObject *self, PyObject *args)
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    arrayH = convertPyListToArray(*H,numRows,numColums);
-    arrayW = convertPyListToArray(*W,numRows,numRows);
+    arrayH = convertPyListToArray(H,numRows,numColums);
+    arrayW = convertPyListToArray(W,numRows,numRows);
     
-    matH = create_matrix(*arrayH, numRows, numColums);
-    matW = create_matrix(*arrayW, numRows, numRows);
-    convertCMatrixToPyList(arrayH);
-    convertCMatrixToPyList(arrayW);
-    newH = updateH(*matH, *matW, ITER, EPSILON);
+    matH = create_matrix(arrayH, numRows, numColums);
+    matW = create_matrix(arrayW, numRows, numRows);
+    newH = updateH(matH, matW);
 
     // convert newH to pyList 
     
-    //PyObject* py_matrix = convertCMatrixToPyList(newH ,numPoints);
+    PyObject* py_matrix = convertCMatrixToPyList(newH);
     // Free the C matrix and points
-    freeArray(updatedH, numRows);
+    freeMatrix(newH);
+    freeMatrix(matH);
+    freeMatrix(matW);
     return py_matrix;   
 }
 
