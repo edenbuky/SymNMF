@@ -37,25 +37,25 @@ point* convertPyListToPoints(PyObject *pyList, int n, int d) {
 }
 
 
-point* convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
+double** convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
     int i,j;
-    *numRows = PyList_Size(pyList);
-    if (*numRows <= 0) {
+    numRows = PyList_Size(pyList);
+    if (numRows <= 0) {
         return NULL;
     }
 
-    *numCols = PyList_Size(PyList_GetItem(pyList, 0));
-    if (*numCols <= 0) {
+    numCols = PyList_Size(PyList_GetItem(pyList, 0));
+    if (numCols <= 0) {
         return NULL;
     }
-    double** array = (double**)malloc(*numRows * sizeof(double*));
+    double** array = (double**)malloc(numRows * sizeof(double*));
     if(checkMemoryAllocation(array)==0){
         return NULL;
     }
     /*Iterate over the outer list*/
     for (i = 0; i < numRows; i++) {
         PyObject *innerList = PyList_GetItem(pyList, i);
-        array[i] = (double*)malloc(*numCols * sizeof(double));
+        array[i] = (double*)malloc(numCols * sizeof(double));
         if(checkMemoryAllocation(array[i]) == 0){
             for(j = 0; j < i; j++){
                 free(array[j]);
@@ -97,12 +97,13 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     PyObject* py_matrix;
     point* points;
     matrix* A;
-    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoints)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    numPoints = PyList_size(dataPoints);
-    dimensions = PyList_size(dataPoints[i]);
+    numPoints = PyList_Size(dataPoints);
+    dimensions = PyList_Size(PyList_GetItem(dataPoints, 0));
+    printf("%d,%d\n",numPoints,dimensions);
     points = convertPyListToPoints(dataPoints,numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     py_matrix = convertCMatrixToPyList(A);
@@ -115,15 +116,16 @@ static PyObject* py_ddg(PyObject *self, PyObject *args)
 {
     PyObject *dataPoints;
     int numPoints, dimensions;
-    matrix * A, D;
+    matrix * A;
+    matrix * D;
     PyObject* py_matrix;
     point* points;
-    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoints)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    numPoints = PyList_size(dataPoints);
-    dimensions = PyList_size(dataPoints[i]);
+    numPoints = PyList_Size(dataPoints);
+    dimensions = PyList_Size(PyList_GetItem(dataPoints, 0));
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     D = ddg(A);
@@ -137,15 +139,17 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
 {
     PyObject *dataPoints;
     int numPoints, dimensions;
-    matrix* A, D, N;
+    matrix* A;
+    matrix* D;
+    matrix* N;
     PyObject* py_matrix;
     point* points;
-    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoints)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    numPoints = PyList_size(dataPoints);
-    dimensions = PyList_size(dataPoints[i]);
+    numPoints = PyList_Size(dataPoints);
+    dimensions = PyList_Size(PyList_GetItem(dataPoints, 0));
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     D = ddg(A);
@@ -161,10 +165,12 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
 static PyObject* py_symnmf(PyObject *self, PyObject *args)
 {
     PyObject *W, *H;
-    double** arrayH, arrayW;
-    int k, numRows, numColums;
-    double eps;
-    matrix* matH, matW newH;
+    double** arrayH;
+    double** arrayW;
+    int numRows, numColums;
+    matrix* matH;
+    matrix* matW;
+    matrix* newH;
     /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
     if(!PyArg_ParseTuple(args, "iiOiO", &numRows, &numColums , &H, &W)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
@@ -188,10 +194,10 @@ static PyObject* py_symnmf(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef SymNMFMethods[] = {
-    {"sym",(PyCFunction) py_sym, METH_VARARGS, pyDoc_STR("Compute the similarity matrix")},
-    {"ddg",(PyCFunction) py_ddg, METH_VARARGS, pyDoc_STR("Compute the Diagonal Degree Matrix")},
-    {"norm",(PyCFunction) py_norm, METH_VARARGS, pyDoc_STR("Compute the normalized similarity matrix")},
-    {"symnmf", py_symnmf, METH_VARARGS, pyDoc_STR("Perform the full symNMF and return H")},
+    {"sym",(PyCFunction) py_sym, METH_VARARGS, "Compute the similarity matrix"},
+    {"ddg",(PyCFunction) py_ddg, METH_VARARGS, "Compute the Diagonal Degree Matrix"},
+    {"norm",(PyCFunction) py_norm, METH_VARARGS, "Compute the normalized similarity matrix"},
+    {"symnmf", py_symnmf, METH_VARARGS, "Perform the full symNMF and return H"},
     {NULL, NULL, 0, NULL}
 };
 
