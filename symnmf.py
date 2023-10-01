@@ -128,7 +128,8 @@ def main():
         d = points.shape[1]
         H = run(goal, points.tolist(), k)
         for i in range(len(H)):
-            print(*H[i], sep = ",") 
+            s = [f'{num:.4f}' for num in H[i]]
+            print(*s, sep = ",") 
 
     except Exception as e:
         print("An Error Has Occurred")
