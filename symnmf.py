@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import math
 import sys
+import mysymnmf
 
 ''' from now on-
 W = normalized similarity matrix (laplacian) (1.3)
@@ -11,8 +12,7 @@ M = random matrix sign
 H = decomposition matrix'''
 
 np.random.seed(0)
-max_iter = 300
-epsilon = 0.0001
+
 
 # norm calculators----------------------------------------
 def F_norm(M):
@@ -99,7 +99,7 @@ def run_python(goal, points, k, it=300, eps=0.01):
     H = calculate_H(H_0, W, it, eps)
     return H
 
-def run(goal, points, k, it=300, eps=0.01):
+def run(goal, points, k, it=300, eps=0.0001):
     # Perform the symNMF algorithm according to the goal
     pass
 
@@ -112,7 +112,11 @@ def main():
         goal = sys.argv[2]
         file_path = sys.argv[3]
         df = pd.read_csv(file_path, sep=",", header=None)
-        points = df.to_numpy()
+        points = df.values
+        n = points.shape[0]
+        d = points.shape[1]
+        H = run(goal, points, k)
+        #print H according to instructions
 
 
 
