@@ -27,24 +27,31 @@ point* convertPyListToPoints(PyObject *pyList, int n, int d) {
 
     return points;
 }
-point* convertPyListToArray(PyObject *pyList, int numRow, int numCol) {
-    double** points = (point*)malloc(n * sizeof(point));
-
-    /*Iterate over the outer list*/
-    for (int i = 0; i < n; i++) {
-        PyObject *innerList = PyList_GetItem(pyList, i);
-
-        /*Allocate memory for the coordinates of the point*/
-        points[i].coordinates = (double*)malloc(d * sizeof(double));
-
-        /*Iterate over the inner list*/
-        for (int j = 0; j < d; j++) {
-            PyObject *coordObj = PyList_GetItem(innerList, j);
-            points[i].coordinates[j] = PyFloat_AsDouble(coordObj);
-        }
+point* convertPyListToArray(PyObject *pyList, int numRows, int numCols) {
+    *numRows = PyList_Size(pyList);
+    if (*numRows <= 0) {
+        return NULL;
     }
 
-    return points;
+    *numCols = PyList_Size(PyList_GetItem(pyList, 0));
+    if (*numCols <= 0) {
+        return NULL;
+    }
+    double** array = (double**)malloc(*numRows * sizeof(double*));
+    CHECK_MEMORY_ALLOCATION(array);
+    /*Iterate over the outer list*/
+    for (int i = 0; i < numRows; i++) {
+        PyObject *innerList = PyList_GetItem(pyList, i);
+        array[i] = (double*)malloc(*numCols * sizeof(double));
+        CHECK_MEMORY_ALLOCATION(array[i]);
+
+        /*Iterate over the inner list*/
+        for (int j = 0; j < numCols; j++) {
+            PyObject *coordObj = PyList_GetItem(innerList, j);
+            array[i][j] = PyFloat_AsDouble(coordObj);
+        }
+    }
+    return array;
 }
 
 static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
