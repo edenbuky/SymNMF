@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include "symnmf.h"
 
+
 point* convertPyListToPoints(PyObject *pyList, int n, int d) {
     point* points = (point*)malloc(n * sizeof(point));
 
@@ -47,11 +48,13 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     PyObject* py_matrix;
     point* points;
     double** A;
-    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-    points = convertPyListToPoints(dataPoints, numPoints, dimensions);
+    numPoints = PyList_size(dataPoints);
+    dimensions = PyList_size(dataPoints[i]);
+    points = convertPyListToPoints(dataPoints,numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     py_matrix = convertCMatrixToPyList(A, numPoints);
     freeMatrix(A, numPoints);
@@ -66,10 +69,12 @@ static PyObject* py_ddg(PyObject *self, PyObject *args)
     double** A, D;
     PyObject* py_matrix;
     point* points;
-    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
+    numPoints = PyList_size(dataPoints);
+    dimensions = PyList_size(dataPoints[i]);
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     D = ddg(A, numPoints);
@@ -86,10 +91,12 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
     double** A, D, N;
     PyObject* py_matrix;
     point* points;
-    if(!PyArg_ParseTuple(args, "Oii", &dataPoint, &numPoints, &dimensions)) {
+    if(!PyArg_ParseTuple(args, "O", &dataPoint)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
+    numPoints = PyList_size(dataPoints);
+    dimensions = PyList_size(dataPoints[i]);
     points = convertPyListToPoints(dataPoints, numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     D = ddg(A, numPoints);
