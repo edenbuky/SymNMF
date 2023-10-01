@@ -83,7 +83,7 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     points = convertPyListToPoints(dataPoints,numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     py_matrix = convertCMatrixToPyList(A, numPoints);
-    freeMatrix(A, numPoints);
+    freeArray(A, numPoints);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -105,8 +105,8 @@ static PyObject* py_ddg(PyObject *self, PyObject *args)
     A = sym(points, numPoints, dimensions);
     D = ddg(A, numPoints);
     py_matrix = convertCMatrixToPyList(D, numPoints);
-    freeMatrix(A, numPoints);
-    freeMatrix(D, numPoints);
+    freeArray(A, numPoints);
+    freeArray(D, numPoints);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -128,9 +128,9 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
     D = ddg(A, numPoints);
     N = norm(A, D, numPoints);
     py_matrix = convertCMatrixToPyList(N, numPoints);
-    freeMatrix(A, numPoints);
-    freeMatrix(D, numPoints);
-    freeMatrix(N, numPoints);
+    freeArray(A, numPoints);
+    freeArray(D, numPoints);
+    freeArray(N, numPoints);
     freePoints(points, numPoints);
     return py_matrix;
 }
@@ -138,22 +138,29 @@ static PyObject* py_norm(PyObject *self, PyObject *args)
 static PyObject* py_symnmf(PyObject *self, PyObject *args)
 {
     PyObject *W, *H;
-    double** updatedH;
+    double** arrayH, arrayW;
     int k, numRows, numColums;
     double eps;
+    matrix* matH, matW newH;
     /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
-    if(!PyArg_ParseTuple(args, "iiiOO",&k, &numRows, &numColums  &H, &W)) {
+    if(!PyArg_ParseTuple(args, "iiOiO", &numRows, &numColums , &H, &W)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
+    arrayH = convertPyListToArray(*H,numRows,numColums);
+    arrayW = convertPyListToArray(*W,numRows,numRows);
     
-    /////////////////////////////////////////////////
-    // Call loop that chack H function update harer//
-    /////////////////////////////////////////////////
+    matH = create_matrix(*arrayH, numRows, numColums);
+    matW = create_matrix(*arrayW, numRows, numRows);
+    convertCMatrixToPyList(arrayH);
+    convertCMatrixToPyList(arrayW);
+    newH = updateH(*matH, *matW, ITER, EPSILON);
 
-    PyObject* py_matrix = convertCMatrixToPyList(updatedH ,numPoints);
+    // convert newH to pyList 
+    
+    //PyObject* py_matrix = convertCMatrixToPyList(newH ,numPoints);
     // Free the C matrix and points
-    freeMatrix(updatedH, numRows);
+    freeArray(updatedH, numRows);
     return py_matrix;   
 }
 

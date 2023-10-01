@@ -4,13 +4,12 @@
 #include <string.h>
 #include "symnmf.h"
 
+#define ITER 300
+#define EPSILON 0.0001
 #define CHECK_MEMORY_ALLOCATION(ptr) \
-    do { \
-        if (!(ptr)) { \
-            fprintf(stderr, "An error has occurred: Memory allocation failed.\n"); \
-            exit(EXIT_FAILURE); \
-        } \
-    } while (0)
+    if (!(ptr)) { \
+        fprintf(stderr, "An error has occurred: Memory allocation failed.\n"); \
+        return 0;} \
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -69,11 +68,38 @@ int main(int argc, char* argv[]) {
     }
 
     // Free the memory for the matrix and points
-    freeMatrix(matrix,numPoints);
+    freeArray(matrix,numPoints);
     freePoints(points, numPoints);
 
     return EXIT_SUCCESS;
 }
+
+int checkMemoryAllocation(void* ptr) {
+    if (!ptr) {
+        fprintf(stderr, "An error has occurred: Memory allocation failed.\n");
+        return 0;
+    } return 1;
+}
+
+double ** build2Darray(int r, int c){
+    int i,j;
+    double** A = (double**)malloc(r * sizeof(double*));
+    if(checkMemoryAllocation(A) == 0){
+        return NULL;
+    }
+    for (i = 0; i < r; i++) {
+        A[i] = (double*)malloc(c * sizeof(double));
+        if(checkMemoryAllocation(A[i]) == 0){
+            for(j = 0; j < i; j++){
+                free(A[j]);
+            }
+            free(A);
+            return NULL;
+        }
+    }
+    return A;
+}
+
 double euclideanDistance(double* p, double* q, int d) {
     double diff, sum = 0.0;
     int i;
@@ -83,18 +109,14 @@ double euclideanDistance(double* p, double* q, int d) {
     }
     return sqrt(sum);
 }
-double** sym(point* points, int n, int d) {
+matrix * sym(point* points, int n, int d) {
     // Allocate memory for the similarity matrix A
-    double** A = (double**)malloc(n * sizeof(double*));
-    CHECK_MEMORY_ALLOCATION(A);
-    for (int i = 0; i < n; i++) {
-        A[i] = (double*)malloc(n * sizeof(double));
-        CHECK_MEMORY_ALLOCATION(A[i]);
-    }
+    int i,j;
+    double** A = build2Darray(n,n);
 
     // Calculate the similarity matrix A
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
             if (i == j) {
                 A[i][j] = 0.0;  // Diagonal elements are 0
             } else {
@@ -104,51 +126,38 @@ double** sym(point* points, int n, int d) {
         }
     }
 
-    return A;
+    return create_matrix(A, n, n);
 }
 
-double** ddg(double** A, int n) {
+matrix * ddg(matrix* A, int n) {
+    int i,j;
     // Allocate memory for the diagonal degree matrix D
-    double** D = (double**)malloc(n * sizeof(double*));
-    CHECK_MEMORY_ALLOCATION(D);
-    for (int i = 0; i < n; i++) {
-        D[i] = (double*)calloc(n, sizeof(double)); // Initialize with zeros
-        CHECK_MEMORY_ALLOCATION(D[i]);
+    double** D = build2Darray(n,n);
+    if(D == NULL){
+        freeMatrix(A);
+        exit(1);
     }
-
     // Calculate the diagonal degree matrix D
-    for (int i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         double sum = 0.0;
-        for (int j = 0; j < n; j++) {
-            sum += A[i][j];
+        for (j = 0; j < n; j++) {
+            sum += (A->data)[i][j];
         }
         D[i][i] = sum;  // Set the diagonal element
     }
 
-    return D;
+    return create_matrix(D, n, n);
 }
 
-double** norm(double** A, double** D, int n) {
-
+matrix* norm(matrix* A, matrix* D, int n) {
     // Calculate the normalized similarity matrix W
-    matrix * mA = createMatrix(A, n, n);
-    matrix * mD = createMatrix(D, n, n);
-    diagPow(mD);
-    matrix * tmp = matMul(mD, mA);
-    matrix * W = matMul(tmp, mD);
+    diagPow(D);
+    matrix * tmp = matMul(D, A);
+    matrix * W = matMul(tmp, D);
 
-    return W -> data;
+    return W;
 }
 
-
-void printMatrix(double** matrix, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n-1; j++) {
-            printf("%f,", matrix[i][j]);
-        }
-        printf("%f\n", matrix[i][n]);
-    }
-}
 
 point* readPointsFromFile(const char* filename, int* numPoints, int* dimensions) {
     char line[256];
@@ -160,8 +169,8 @@ point* readPointsFromFile(const char* filename, int* numPoints, int* dimensions)
     *dimensions = 0;
     file = fopen(filename, "r");
     if (file == NULL) {
-        printInvalidInputError("An Error Has Occurred\n");
-        return NULL;
+        printf("An Error Has Occurred\n");
+        exit(1);
     }
     while (fgets(line, sizeof(line), file)) {
         (*numPoints)++;
@@ -175,13 +184,17 @@ point* readPointsFromFile(const char* filename, int* numPoints, int* dimensions)
             *dimensions = count;
         } else if (*dimensions != count) {
             fclose(file);
-            printInvalidInputError("An Error Has Occurred\n");
-            return NULL;
+            printf("An Error Has Occurred\n");
+            exit(1);
         }
     }
     
     points = (point*)malloc(*numPoints * sizeof(point));
-    CHECK_MEMORY_ALLOCATION(points);
+    if(checkMemoryAllocation(points) == 0){
+        freePoints(points, numPoints);
+        exit(1);
+
+    }
 
     rewind(file);
 
@@ -190,8 +203,8 @@ point* readPointsFromFile(const char* filename, int* numPoints, int* dimensions)
         points[pointIndex].coordinates = (double*)malloc(*dimensions * sizeof(double));
         if (points[pointIndex].coordinates == NULL) {
             freePoints(points, pointIndex);
-            printInvalidInputError("An Error Has Occurred\n");
-            return NULL;
+            printf("An Error Has Occurred\n");
+            exit(1);
         }
 
         coordinateIndex = 0;
@@ -219,7 +232,7 @@ void freePoints(point* points, int numPoints) {
 
     free(points);
 }
-void freeMatrix(double** matrix, int numPoints) {
+void freeArray(double** matrix, int numPoints) {
     int i;
     if (matrix == NULL) {
         return;
@@ -229,10 +242,13 @@ void freeMatrix(double** matrix, int numPoints) {
     }
     free(matrix);
 }
-void printInvalidInputError(const char* message) {
-    printf("%s\n", message);
-    exit(1);
+
+void freeMatrix(matrix * m){
+    freeArray(m->data, m->r);
+    free(m);
 }
+
+
 double squaredFrobeniusNorm(matrix* m1, matrix* m2) {
     double sum = 0.0;
     for (int i = 0; i < m1->r; i++) {
@@ -263,6 +279,10 @@ void set(matrix* mat, int i, int j, double val){
 
 matrix * create_matrix(double ** arr, int r, int c){
     matrix * new = (matrix*)malloc(sizeof(matrix));
+    if(checkMemoryAllocation(new) == 0){
+        freeArray(arr, r);
+        exit(1);
+    }
     new -> r = r;
     new -> c = c;
     new -> data = arr;
@@ -282,6 +302,10 @@ double * getCol(matrix* mat, int index){
     int i;
     int len = mat->r;
     double * col = (double*)malloc(len * sizeof(double));
+    if(checkMemoryAllocation(col)==0){
+        freeMatrix(mat);
+        exit(1);
+    }
     for(i = 0; i < len; i++){
         col[i] = get(mat, i, index);
     }
@@ -309,9 +333,11 @@ matrix* matMul(matrix* m1, matrix* m2){
     if(c1 != r2){
         printf("sizes dont match");
     }
-    double** ans = (double**)malloc(r1 * sizeof(double*));
-    for (i = 0; i < r1; i++){
-        ans[i] = (double*)malloc(c2 * sizeof(double));
+    double** ans = build2Darray(r1,c2);
+    if(!ans){
+        freeMatrix(m1);
+        freeMatrix(m2);
+        return NULL;
     }
     
     for (i = 0; i < r1; i++){
@@ -334,11 +360,13 @@ void diagPow(matrix * m){
 }
 
 matrix* transpose(matrix* m){
+    int i,j;
     int r = m->c;
     int c = m->r;
-    double** arr = (double**)malloc(r * sizeof(double*));
-    for (i = 0; i < r; i++){
-        arr[i] = (double*)malloc(c * sizeof(double));
+    double** arr = build2Darray(r,c);
+    if(!arr){
+        freeMatrix(m);
+        return NULL;
     }
      for (i = 0; i < r; i++)
         for (j = 0; j < c; j++)
@@ -349,6 +377,7 @@ matrix* transpose(matrix* m){
 }
 
 matrix* oneIter(matrix * H, matrix * W){
+    int i,j;
     double b = 0.5;
     double tmp;
     int r = H->r;
@@ -356,15 +385,30 @@ matrix* oneIter(matrix * H, matrix * W){
 
     matrix* mone = matMul(W,H);
     matrix* H_t = transpose(H);
+    if(!H_t){
+        freeMatrix(W);
+        exit(1);
+    }
     matrix* mehane = matMul(H, H_t);
+    if(!mehane){
+        freeMatrix(W);
+        exit(1);
+    }
     mehane = matMul(mehane, H);
+    if(!mehane){
+        freeMatrix(W);
+        exit(1);
+    }
 
     double ** top = mone -> data;
     double ** bottom = mehane -> data;
     
-    double** arr = (double**)malloc(r * sizeof(double*));
-    for (i = 0; i < r; i++){
-        arr[i] = (double*)malloc(c * sizeof(double));
+    double** arr = build2Darray(r,c);
+    if(!arr){
+        freeMatrix(H);
+        freeMatrix(W);
+        freeMatrix(H_t);
+        exit(1);
     }
      for (i = 0; i < r; i++){
         for (j = 0; j < c; j++){
@@ -376,7 +420,9 @@ matrix* oneIter(matrix * H, matrix * W){
 
 }
 
-matrix * updateH(matrix *H, matrix *W. int iter, double epsilon){
+matrix * updateH(matrix *H, matrix *W){
+    double fNorm;
+    int iter = ITER;
     matrix* H_old = &H;
      matrix * H_new = NULL;
     do{
@@ -385,7 +431,7 @@ matrix * updateH(matrix *H, matrix *W. int iter, double epsilon){
         iter --;
         H_old = H_new;
     }
-    while((sqrt(fNorm) >= epsilon*epsilon) || (iter > 0));
+    while((sqrt(fNorm) >= EPSILON*EPSILON) || (iter > 0));
 
     return H_new;
 
