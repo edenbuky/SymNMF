@@ -1,5 +1,7 @@
 #ifndef symnmf_h
 #define symnmf_h
+#define ITER 300
+#define EPSILON 0.0001
 
 typedef struct {
     double *coordinates;

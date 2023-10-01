@@ -4,12 +4,7 @@
 #include <string.h>
 #include "symnmf.h"
 
-#define ITER 300
-#define EPSILON 0.0001
-#define CHECK_MEMORY_ALLOCATION(ptr) \
-    if (!(ptr)) { \
-        fprintf(stderr, "An error has occurred: Memory allocation failed.\n"); \
-        return 0;} \
+
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -27,29 +22,22 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    double** matrix = NULL;
+    matrix* mat = NULL;
 
     if (strcmp(goal, "sym") == 0) {
-        matrix = sym(points, numPoints, dimensions);
+        mat = sym(points, numPoints, dimensions);
     } else if (strcmp(goal, "ddg") == 0) {
-        double** A = sym(points, numPoints, dimensions);
-        matrix = ddg(A);
+        matrix* A = sym(points, numPoints, dimensions);
+        mat = ddg(A);
         // Free the memory for A after using it
-        for (int i = 0; i < numPoints; i++) {
-            free(A[i]);
-        }
-        free(A);
+        freeMatrix(A);
     } else if (strcmp(goal, "norm") == 0) {
-        double** A = sym(points, numPoints, dimensions);
-        double** D = ddg(A);
-        matrix = norm(A, D);
+        matrix * A = sym(points, numPoints, dimensions);
+        matrix* D = ddg(A);
+        mat = norm(A, D);
         // Free the memory for A and D after using them
-        for (int i = 0; i < numPoints; i++) {
-            free(A[i]);
-            free(D[i]);
-        }
-        free(A);
-        free(D);
+        freeMatrix(A);
+        freeMatrix(D);
     } else {
         fprintf(stderr, "Invalid goal specified\n");
         freePoints(points, numPoints);
@@ -57,18 +45,10 @@ int main(int argc, char* argv[]) {
     }
 
     // Print the resulting matrix
-    for (int i = 0; i < numPoints; i++) {
-        for (int j = 0; j < numPoints; j++) {
-            printf("%.4f", matrix[i][j]);
-            if (j < numPoints - 1) {
-                printf(",");
-            }
-        }
-        printf("\n");
-    }
+    printMat(mat);
 
     // Free the memory for the matrix and points
-    freeArray(matrix,numPoints);
+    freeMatrix(mat);
     freePoints(points, numPoints);
 
     return EXIT_SUCCESS;
