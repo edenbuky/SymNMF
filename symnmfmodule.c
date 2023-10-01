@@ -27,6 +27,25 @@ point* convertPyListToPoints(PyObject *pyList, int n, int d) {
 
     return points;
 }
+point* convertPyListToArray(PyObject *pyList, int numRow, int numCol) {
+    double** points = (point*)malloc(n * sizeof(point));
+
+    /*Iterate over the outer list*/
+    for (int i = 0; i < n; i++) {
+        PyObject *innerList = PyList_GetItem(pyList, i);
+
+        /*Allocate memory for the coordinates of the point*/
+        points[i].coordinates = (double*)malloc(d * sizeof(double));
+
+        /*Iterate over the inner list*/
+        for (int j = 0; j < d; j++) {
+            PyObject *coordObj = PyList_GetItem(innerList, j);
+            points[i].coordinates[j] = PyFloat_AsDouble(coordObj);
+        }
+    }
+
+    return points;
+}
 
 static PyObject* convertCMatrixToPyList(double **matrix, int numPoints)
 {
