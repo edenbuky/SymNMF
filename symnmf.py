@@ -126,7 +126,7 @@ def main():
         points = df.values
         n = points.shape[0]
         d = points.shape[1]
-        H = run(goal, points, k)
+        H = run(goal, points.tolist(), k)
         for i in range(len(H)):
             print(*H[i], sep = ",") 
 
