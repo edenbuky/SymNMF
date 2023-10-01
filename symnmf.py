@@ -99,9 +99,20 @@ def run_python(goal, points, k, it=300, eps=0.01):
     H = calculate_H(H_0, W, it, eps)
     return H
 
-def run(goal, points, k, it=300, eps=0.0001):
+def run(goal, points, k):
     # Perform the symNMF algorithm according to the goal
-    pass
+    if goal == "sym":
+        return mysymnmf.sym(points)
+    elif goal == "ddg":
+        return mysymnmf.ddg(points)
+    elif goal == "norm":
+        return mysymnmf.norm(points)
+    else:
+        W = mysymnmf.norm(points)
+        H = init_H(np.array(W),k)
+        n = H.shape[0]
+        return mysymnmf.symnmf(points, H.tolist(), W, n, k)
+    
 
 
 
@@ -116,9 +127,8 @@ def main():
         n = points.shape[0]
         d = points.shape[1]
         H = run(goal, points, k)
-        #print H according to instructions
-
-
+        for i in range(len(H)):
+            print(*H[i], sep = ",") 
 
     except Exception as e:
         print("An Error Has Occurred")
