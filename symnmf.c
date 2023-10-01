@@ -132,7 +132,6 @@ matrix * ddg(matrix* A) {
 
 matrix* norm(matrix* A, matrix* D) {
     // Calculate the normalized similarity matrix W
-    int n = A->c;
     diagPow(D);
     matrix * tmp = matMul(D, A);
     matrix * W = matMul(tmp, D);
@@ -173,7 +172,7 @@ point* readPointsFromFile(const char* filename, int* numPoints, int* dimensions)
     
     points = (point*)malloc(*numPoints * sizeof(point));
     if(checkMemoryAllocation(points) == 0){
-        freePoints(points, numPoints);
+        freePoints(points, *numPoints);
         exit(1);
 
     }
@@ -244,13 +243,6 @@ double squaredFrobeniusNorm(matrix* m1, matrix* m2) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct matrix{
-    int r;
-    int c;
-    double ** data;
-};
-typedef struct matrix matrix;
-
 double get(matrix* mat, int i, int j){
     return (mat->data)[i][j];
 }
@@ -273,7 +265,7 @@ matrix * create_matrix(double ** arr, int r, int c){
 
 double mulSum(double* arr1, double* arr2, int l){
    int i;
-   int cnt = 0;
+   double cnt = 0.0;
    for(i = 0; i < l; i++){
        cnt += arr1[i] * arr2[i];
    }
@@ -295,12 +287,13 @@ double * getCol(matrix* mat, int index){
 }
 
 void printMat(matrix * m){
-    int i,j;
+    int i,j,n;
+    n =m->c;
     for(i = 0; i < m->r; i++){
-        for(j = 0; j< m->c; j++){
-            printf("%.4f \t", (m->data)[i][j]);
+        for(j = 0; j< n-1; j++){
+            printf("%.4f,", (m->data)[i][j]);
         }
-        printf("\n");
+        printf("%.4f\n", (m->data)[i][n-1]);
     }
 }
 
@@ -331,12 +324,15 @@ matrix* matMul(matrix* m1, matrix* m2){
     return create_matrix(ans, r1, c2);
 }
 
+
 void diagPow(matrix * m){
     //power of -0.5 to diagonal matrix
-    int i, tmp;
+    int i;
+    double x, tmp;
     for(i = 0; i < m->c; i++){
-        tmp = 1/sqrt((m->data)[i][i]);
-        (m->data)[i][i] = tmp;
+        x = get(m, i, i);
+        tmp = 1/sqrt(x);
+        set(m, i, i, tmp);
     }
 
 }
@@ -405,15 +401,15 @@ matrix* oneIter(matrix * H, matrix * W){
 matrix * updateH(matrix *H, matrix *W){
     double fNorm;
     int iter = ITER;
-    matrix* H_old = &H;
+    matrix* H_old = H;
      matrix * H_new = NULL;
     do{
         H_new = oneIter(H_old, W);
-        double fNorm =  squaredFrobeniusNorm(H_new, H_old);
+        fNorm =  squaredFrobeniusNorm(H_new, H_old);
         iter --;
         H_old = H_new;
     }
-    while((sqrt(fNorm) >= EPSILON*EPSILON) || (iter > 0));
+    while((sqrt(fNorm) >= EPSILON) || (iter > 0));
 
     return H_new;
 
