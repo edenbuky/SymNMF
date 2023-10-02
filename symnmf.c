@@ -7,35 +7,41 @@
 
 
 int main(int argc, char* argv[]) {
+    const char* goal;
+    const char* filename;
+    int numPoints, dimensions;
+    point* points;
+    matrix* mat;
+    matrix* A;
+
     if (argc != 3) {
         fprintf(stderr, "Usage: %s <goal> <filename>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    const char* goal = argv[1];
-    const char* filename = argv[2];
+    goal = argv[1];
+    filename = argv[2];
 
-    int numPoints, dimensions;
-    point* points = readPointsFromFile(filename, &numPoints, &dimensions);
+    points = readPointsFromFile(filename, &numPoints, &dimensions);
     if (!points) {
         fprintf(stderr, "An Error Has Occurred\n");
         return EXIT_FAILURE;
     }
 
-    matrix* mat = NULL;
+    mat = NULL;
 
     if (strcmp(goal, "sym") == 0) {
         mat = sym(points, numPoints, dimensions);
     } else if (strcmp(goal, "ddg") == 0) {
-        matrix* A = sym(points, numPoints, dimensions);
+        A = sym(points, numPoints, dimensions);
         mat = ddg(A);
-        // Free the memory for A after using it
+        /* Free the memory for A after using it */
         freeMatrix(A);
     } else if (strcmp(goal, "norm") == 0) {
         matrix * A = sym(points, numPoints, dimensions);
         matrix* D = ddg(A);
         mat = norm(A, D);
-        // Free the memory for A and D after using them
+        /* Free the memory for A and D after using them */
         freeMatrix(A);
         freeMatrix(D);
     } else {
@@ -44,10 +50,10 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Print the resulting matrix
+    /* Print the resulting matrix */
     printMat(mat);
 
-    // Free the memory for the matrix and points
+    /* Free the memory for the matrix and points */
     freeMatrix(mat);
     freePoints(points, numPoints);
 
@@ -90,15 +96,15 @@ double euclideanDistance(double* p, double* q, int d) {
     return sqrt(sum);
 }
 matrix * sym(point* points, int n, int d) {
-    // Allocate memory for the similarity matrix A
+    /* Allocate memory for the similarity matrix A*/
     int i,j;
     double** A = build2Darray(n,n);
 
-    // Calculate the similarity matrix A
+    /* Calculate the similarity matrix A */
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
             if (i == j) {
-                A[i][j] = 0.0;  // Diagonal elements are 0
+                A[i][j] = 0.0;  /*Diagonal elements are 0*/
             } else {
                 double distance = euclideanDistance(points[i].coordinates, points[j].coordinates, d);
                 A[i][j] = exp(-distance * distance / 2.0);
@@ -111,20 +117,20 @@ matrix * sym(point* points, int n, int d) {
 
 matrix * ddg(matrix* A) {
     int i,j,n;
+    double ** D;
+    double sum;
     n = A->c;
-    // Allocate memory for the diagonal degree matrix D
-    double** D = build2Darray(n,n);
+    D = build2Darray(n,n);
     if(D == NULL){
         freeMatrix(A);
         exit(1);
     }
-    // Calculate the diagonal degree matrix D
     for (i = 0; i < n; i++) {
-        double sum = 0.0;
+         sum = 0.0;
         for (j = 0; j < n; j++) {
             sum += (A->data)[i][j];
         }
-        D[i][i] = sum;  // Set the diagonal element
+        D[i][i] = sum;  
         for(j=0; j<n; j++){
             if (j != i){
                 D[i][j] = 0.0;
@@ -136,10 +142,11 @@ matrix * ddg(matrix* A) {
 }
 
 matrix* norm(matrix* A, matrix* D) {
-    // Calculate the normalized similarity matrix W
+    matrix * tmp;
+    matrix * W;
     diagPow(D);
-    matrix * tmp = matMul(D, A);
-    matrix * W = matMul(tmp, D);
+    tmp = matMul(D, A);
+    W = matMul(tmp, D);
 
     return W;
 }
@@ -237,16 +244,15 @@ void freeMatrix(matrix * m){
 
 double squaredFrobeniusNorm(matrix* m1, matrix* m2) {
     double sum = 0.0;
-    for (int i = 0; i < m1->r; i++) {
-        for (int j = 0; j < m1->c; j++) {
+    int i,j;
+    for (i = 0; i < m1->r; i++) {
+        for (j = 0; j < m1->c; j++) {
             double tmp = ((m1->data)[i][j] - (m2->data)[i][j]);
             sum += (tmp * tmp);
         }
     }
     return sum;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 double get(matrix* mat, int i, int j){
     return (mat->data)[i][j];
@@ -305,6 +311,7 @@ void printMat(matrix * m){
 matrix* matMul(matrix* m1, matrix* m2){
     int i, j;
     double * col;
+    double** ans;
     int r1 = m1->r;
     int r2 = m2->r;
     int c1 = m1->c;
@@ -313,7 +320,7 @@ matrix* matMul(matrix* m1, matrix* m2){
     if(c1 != r2){
         printf("sizes dont match");
     }
-    double** ans = build2Darray(r1,c2);
+    ans = build2Darray(r1,c2);
     if(!ans){
         freeMatrix(m1);
         freeMatrix(m2);
@@ -331,7 +338,6 @@ matrix* matMul(matrix* m1, matrix* m2){
 
 
 void diagPow(matrix * m){
-    //power of -0.5 to diagonal matrix
     int i;
     double x, tmp;
     for(i = 0; i < m->c; i++){
@@ -363,16 +369,22 @@ matrix* oneIter(matrix * H, matrix * W){
     int i,j;
     double b = 0.5;
     double tmp;
+    matrix* mone;
+    matrix* H_t;
+    matrix* mehane;
+    double ** bottom;
+    double ** top;
+    double ** arr;
     int r = H->r;
     int c = H->c;
-
-    matrix* mone = matMul(W,H);
-    matrix* H_t = transpose(H);
+    
+    mone = matMul(W,H);
+    H_t = transpose(H);
     if(!H_t){
         freeMatrix(W);
         exit(1);
     }
-    matrix* mehane = matMul(H, H_t);
+    mehane = matMul(H, H_t);
     if(!mehane){
         freeMatrix(W);
         exit(1);
@@ -383,10 +395,10 @@ matrix* oneIter(matrix * H, matrix * W){
         exit(1);
     }
 
-    double ** top = mone -> data;
-    double ** bottom = mehane -> data;
+    top = mone -> data;
+    bottom = mehane -> data;
     
-    double** arr = build2Darray(r,c);
+    arr = build2Darray(r,c);
     if(!arr){
         freeMatrix(H);
         freeMatrix(W);
