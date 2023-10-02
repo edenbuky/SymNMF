@@ -1,8 +1,16 @@
-# -*- MakeFile -*-
+CC = gcc
 
-mysymnmf.cpython-36m-x86_64-linux-gnu.so: symnmfmodule.c symnmf.o setup.py
-	python3 setup.py build_ext --inplace
+CFLAGS = -ansi -Wall -Wextra -Werror -pedantic-errors
+LDFLAGS = -lm
+SRC = symnmf.c
+EXECUTABLE = symnmf
 
+all: $(EXECUTABLE)
 
-symnmf.o: symnmf.c symnmf.h
-	gcc -o symnmf symnmf.c -lm
+$(EXECUTABLE): $(SRC)
+$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+
+clean:
+rm -f $(EXECUTABLE)
+
+.PHONY: all clean run
