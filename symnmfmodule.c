@@ -28,7 +28,7 @@ point* convertPyListToPoints(PyObject *pyList, int n, int d) {
         }
 
         /*Iterate over the inner list*/
-        for (int j = 0; j < d; j++) {
+        for (j = 0; j < d; j++) {
             PyObject *coordObj = PyList_GetItem(innerList, j);
             points[i].coordinates[j] = PyFloat_AsDouble(coordObj);
         }
