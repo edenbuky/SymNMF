@@ -103,7 +103,6 @@ static PyObject* py_sym(PyObject *self, PyObject *args)
     }
     numPoints = PyList_Size(dataPoints);
     dimensions = PyList_Size(PyList_GetItem(dataPoints, 0));
-    printf("%d,%d\n",numPoints,dimensions);
     points = convertPyListToPoints(dataPoints,numPoints, dimensions);
     A = sym(points, numPoints, dimensions);
     py_matrix = convertCMatrixToPyList(A);
@@ -172,7 +171,7 @@ static PyObject* py_symnmf(PyObject *self, PyObject *args)
     matrix* matW;
     matrix* newH;
     /* This parses the Python arguments into a double (d)  variable named z and int (i) variable named n*/
-    if(!PyArg_ParseTuple(args, "iiOiO", &numRows, &numColums , &H, &W)) {
+    if(!PyArg_ParseTuple(args, "iiOO", &numRows, &numColums , &H, &W)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
