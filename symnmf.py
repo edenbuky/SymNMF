@@ -111,11 +111,9 @@ def run(goal, points, k):
         W = mysymnmf.norm(points)
         H = init_H(np.array(W),k)
         n = H.shape[0]
-        return mysymnmf.symnmf(points, H.tolist(), W, n, k)
+        H_new = H.tolist()
+        return mysymnmf.symnmf(n, k, H_new, W)
     
-
-
-
 
 def main():
     try:
@@ -133,11 +131,10 @@ def main():
 
     except Exception as e:
         print("An Error Has Occurred")
-        # print(e)
+        print(e)
         exit(1)
 
 
 
 if __name__ == '__main__':
     main()
-
