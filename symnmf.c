@@ -125,6 +125,11 @@ matrix * ddg(matrix* A) {
             sum += (A->data)[i][j];
         }
         D[i][i] = sum;  // Set the diagonal element
+        for(j=0; j<n; j++){
+            if (j != i){
+                D[i][j] = 0.0;
+            }
+        }
     }
 
     return create_matrix(D, n, n);
@@ -391,7 +396,7 @@ matrix* oneIter(matrix * H, matrix * W){
      for (i = 0; i < r; i++){
         for (j = 0; j < c; j++){
             tmp = b * top[i][j] / bottom[i][j];
-            arr[i][j] = 1 - b + tmp;
+            arr[i][j] = (H->data)[i][j] * (1 - b + tmp);
         }
      }
      return create_matrix(arr, r, c);
