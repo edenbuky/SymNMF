@@ -2,11 +2,8 @@ from sklearn.metrics import silhouette_score
 import numpy as np
 import math
 import sys
-import pandas as pd
 import mysymnmf
 
-epsilon = 0.0001
-iter = 300
 
 def init_H(W, k):
     # initialize H
@@ -15,17 +12,35 @@ def init_H(W, k):
     H = np.random.uniform(low=0, high=2*math.sqrt(m/k), size=(len(W),k))
     return H
 
+def run_symnmf(goal, points, k):
+    # Perform the symNMF algorithm according to the goal
+    if goal == "sym":
+        return mysymnmf.sym(points)
+    elif goal == "ddg":
+        return mysymnmf.ddg(points)
+    elif goal == "norm":
+        return mysymnmf.norm(points)
+    else:
+        W = mysymnmf.norm(points)
+        H = init_H(np.array(W),k)
+        n = H.shape[0]
+        H_new = H.tolist()
+        return mysymnmf.symnmf(n, k, H_new, W)
 
-def get_clusters_symnmf(H):
+
+def get_clusters_symnmf(goal, points, k):
+    # in: points as list of lists, out: np array
+    H = run_symnmf(goal, points, k)
     H = np.array(H)
     clusters_idx = np.argmax(H, axis=1) # clusters[i] = num of cluster point i is in
-    clusters = {}
-    for i in range(H.shape[1]):
-        clusters[i] = H[clusters_idx == i]
-    return clusters
+    return clusters_idx
+
     
-
-
+def get_clusters_kmeans(k, points):
+    # in: points as list of lists, out: np array
+    kmeans = K_Means(k, points)
+    kmeans.run_kmeans()
+    return np.array(kmeans.cluster_labels)
 
 
 def distance(p1, p2):
@@ -36,10 +51,12 @@ def distance(p1, p2):
     return sum ** 0.5
 
 class K_Means:
-    def __init__(self, k, iter, points):
+    def __init__(self, k, points, iter=300, epsilon=0.0001):
         self.k = k
         self.iter = iter
+        self.epsilon = epsilon
         self.points = points
+        self.cluster_labels = [i for i in range(len(points))]
         self.centroids = [c for c in points[:k]]
         self.clusters = [[c] for c in self.centroids]
         self.mk = [False for i in range(k)]
@@ -55,7 +72,6 @@ class K_Means:
 
 
     def run_iter(self):
-        global epsilon
         # assign points to clusters
         for i in range(len(self.points)):
             point = self.points[i]
@@ -68,17 +84,18 @@ class K_Means:
                     dis = tmp
                     idx = cluster_idx
             self.clusters[idx].append(point)
+            self.cluster_labels[i] = idx
         # update centroids
         for j in range(len(self.centroids)):
             new_mean = self.calc_mean(self.clusters[j])
             dmk = distance(new_mean, self.centroids[j])
-            if dmk < epsilon:
+            if dmk < self.epsilon:
                 self.mk[j] = True
             self.centroids[j] = new_mean
         # erase points from clusters
         self.clusters = [[] for i in range(self.k)]
 
-    def run(self, pnt):
+    def run_kmeans(self, pnt=False):
         iters = self.iter
         while iters > 0 and not all(self.mk):
             self.run_iter()
@@ -93,17 +110,25 @@ def main():
     try:
         k = int(sys.argv[1])
         file_path = sys.argv[2]
-        df = pd.read_csv(file_path, sep=",", header=None)
-        points = df.values
-        n = points.shape[0]
-        W = mysymnmf.norm(points)
-        H0 = init_H(np.array(W), k)
-        H = mysymnmf.symnmf(points, H0.tolist(), W, n, k)
+        goal = "symnmf"
+        points = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                point = [float(num) for num in line.split(',')]
+                points.append(point)
 
-        kmeans = K_Means(k, iter, points)
-        kmeans.run()
+        symnmf_labels = get_clusters_symnmf(goal, points, k)
+        kmeans_labels = get_clusters_kmeans(k, points)
 
-        kmeans_clusters = kmeans.centroids
+        points = np.array(points)
+
+        symnmf_score = silhouette_score(points, symnmf_labels)
+        kmeans_score = silhouette_score(points, kmeans_labels)
+
+        print("nmf: %.4f" % symnmf_score)
+        print("kmeans: %.4f" % kmeans_score)
+
+
 
     except Exception as e:
         print("An Error Has Occurred")
