@@ -18,7 +18,7 @@ def init_H(W, k):
     # initialize H
     # W = laplasian matrix, k = num of clusters
     m = np.mean(W)
-    H = np.random.uniform(low=0, high=2*math.sqrt(m/k), size=(len(W),k))
+    H = np.random.uniform(low=0, high=2*math.sqrt(m/k), size=(W.shape[0],k))
     return H
 
 
