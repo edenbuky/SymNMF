@@ -108,7 +108,7 @@ matrix * sym(point* points, int n, int d) {
                 A[i][j] = 0.0;  /*Diagonal elements are 0*/
             } else {
                 double distance = euclideanDistance(points[i].coordinates, points[j].coordinates, d);
-                A[i][j] = exp(-distance * distance / 2.0);
+                A[i][j] = exp(-distance / 2.0);
             }
         }
     }
