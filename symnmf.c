@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         freeMatrix(A);
         freeMatrix(D);
     } else {
-        fprintf(stderr, "Invalid goal specified\n");
+        fprintf(stderr, "An error has occurred\n");
         freePoints(points, numPoints);
         return EXIT_FAILURE;
     }
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 
 int checkMemoryAllocation(void* ptr) {
     if (!ptr) {
-        fprintf(stderr, "An error has occurred: Memory allocation failed.\n");
+        fprintf(stderr, "An error has occurred\n");
         return 0;
     } return 1;
 }
