@@ -363,6 +363,8 @@ matrix* matMul(matrix* m1, matrix* m2){
   
         }
     }
+    return create_matrix(ans, r1, c2);
+
 }
 
 
