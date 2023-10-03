@@ -308,7 +308,7 @@ void printMat(matrix * m){
     }
 }
 
-matrix* matMul(matrix* m1, matrix* m2){
+/*matrix* matMul2(matrix* m1, matrix* m2){
     int i, j;
     double * col;
     double** ans;
@@ -334,6 +334,35 @@ matrix* matMul(matrix* m1, matrix* m2){
         }
     }
     return create_matrix(ans, r1, c2);
+}
+*/
+
+matrix* matMul(matrix* m1, matrix* m2){
+    int i, j;
+    double * col;
+    double** ans;
+    int r1 = m1->r;
+    int r2 = m2->r;
+    int c1 = m1->c;
+    int c2 = m2->c;
+  
+    ans = build2Darray(r1,c2);
+    if(!ans){
+        freeMatrix(m1);
+        freeMatrix(m2);
+        return NULL;
+    }
+  
+    for (int i = 0; i < r1; i++) {
+        for (int j = 0; j < c2; j++) {
+            ans[i][j] = 0;
+  
+            for (int k = 0; k < r2; k++) {
+                ans[i][j] += (m1->data)[i][k] * (m2->data)[k][j];
+            }
+  
+        }
+    }
 }
 
 
