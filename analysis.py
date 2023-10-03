@@ -16,10 +16,13 @@ def init_H(W, k):
     return H
 
 
-def get_clusters(H):
-    #H list of lists
+def get_clusters_symnmf(H):
     H = np.array(H)
-    clusters = np.argmax(H, axis=1) # clusters[i] = num of cluster point i is in
+    clusters_idx = np.argmax(H, axis=1) # clusters[i] = num of cluster point i is in
+    clusters = {}
+    for i in range(H.shape[1]):
+        clusters[i] = H[clusters_idx == i]
+    return clusters
     
 
 
