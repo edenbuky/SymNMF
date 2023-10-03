@@ -49,7 +49,9 @@ def build_diag_deg_D(A):
 def build_laplacian_W(A, D):
     # A = Similarity matrix, D = diagonal degree mat
     # build W
-    D_new = D ** (-0.5)
+    D_new = np.zeros(D.shape)
+    for i in range(len(D)):
+        D_new[i,i] = D[i,i] ** -0.5
     tmp = np.matmul(D_new, A)
     W = np.matmul(tmp, D_new)
     return W
