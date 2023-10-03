@@ -295,7 +295,6 @@ matrix* matMul(matrix* m1, matrix* m2){
     double** ans;
     int r1 = m1->r;
     int r2 = m2->r;
-    int c1 = m1->c;
     int c2 = m2->c;
   
     ans = build2Darray(r1,c2);
@@ -305,8 +304,8 @@ matrix* matMul(matrix* m1, matrix* m2){
         return NULL;
     }
   
-    for (int i = 0; i < r1; i++) {
-        for (int j = 0; j < c2; j++) {
+    for (i = 0; i < r1; i++) {
+        for (j = 0; j < c2; j++) {
             ans[i][j] = 0;
   
             for (k = 0; k < r2; k++) {
@@ -401,15 +400,25 @@ matrix* oneIter(matrix * H, matrix * W){
 matrix * updateH(matrix *H, matrix *W){
     double fNorm;
     int iter = ITER;
-    matrix* H_old = H;
-     matrix * H_new = NULL;
+    double ** copied;
+    int i,j;
+    matrix * H_old;
+    matrix * H_new;
+
+    for(i=0; i < H->r; i++){
+        for(j = 0; j< H->c; j++){
+            copied[i][j] = (H->data)[i][j];
+        }
+    }
+    H_old = create_matrix(copied, H->c, H->r);
+    H_new = NULL;
     do{
         H_new = oneIter(H_old, W);
         fNorm =  squaredFrobeniusNorm(H_new, H_old);
         iter --;
         H_old = H_new;
     }
-    while((sqrt(fNorm) >= EPSILON) || (iter > 0));
+    while((fNorm >= EPSILON) || (iter > 0));
 
     return H_new;
 
