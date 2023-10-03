@@ -359,7 +359,6 @@ matrix* oneIter(matrix * H, matrix * W){
     double ** arr;
     int r = H->r;
     int c = H->c;
-    
     mone = matMul(W,H);
     H_t = transpose(H);
     if(!H_t){
@@ -404,24 +403,30 @@ matrix * updateH(matrix *H, matrix *W){
     int i,j;
     matrix * H_old;
     matrix * H_new;
-
-    for(i=0; i < H->r; i++){
+    copied = build2Darray(H->r,H->c);
+    if(copied == NULL){
+        freeMatrix(H);
+        freeMatrix(W);
+        exit(1);
+    }
+    for(i = 0; i < H->r; i++){
         for(j = 0; j< H->c; j++){
             copied[i][j] = (H->data)[i][j];
         }
     }
-    H_old = create_matrix(copied, H->c, H->r);
+    H_old = create_matrix(copied, H->r, H->c);
+    
     H_new = NULL;
     do{
         H_new = oneIter(H_old, W);
         fNorm =  squaredFrobeniusNorm(H_new, H_old);
         iter --;
         H_old = H_new;
+        
+        
     }
-    while((fNorm >= EPSILON) || (iter > 0));
+    while((fNorm >= EPSILON) && (iter > 0));
 
     return H_new;
 
 }
-
-
