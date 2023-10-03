@@ -338,7 +338,7 @@ void printMat(matrix * m){
 */
 
 matrix* matMul(matrix* m1, matrix* m2){
-    int i, j;
+    int i, j, k;
     double * col;
     double** ans;
     int r1 = m1->r;
@@ -357,7 +357,7 @@ matrix* matMul(matrix* m1, matrix* m2){
         for (int j = 0; j < c2; j++) {
             ans[i][j] = 0;
   
-            for (int k = 0; k < r2; k++) {
+            for (k = 0; k < r2; k++) {
                 ans[i][j] += (m1->data)[i][k] * (m2->data)[k][j];
             }
   
