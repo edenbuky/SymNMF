@@ -4,6 +4,8 @@ import math
 import sys
 import mysymnmf
 
+np.random.seed(0)
+
 
 def init_H(W, k):
     # initialize H

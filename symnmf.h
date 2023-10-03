@@ -28,8 +28,6 @@ matrix* transpose(matrix* m);
 void diagPow(matrix * m);
 matrix* matMul(matrix* m1, matrix* m2);
 void printMat(matrix * m);
-double * getCol(matrix* mat, int index);
-double mulSum(double* arr1, double* arr2, int l);
 matrix * create_matrix(double ** arr, int r, int c);
 void set(matrix* mat, int i, int j, double val);
 double get(matrix* mat, int i, int j);

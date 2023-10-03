@@ -87,13 +87,14 @@ double ** build2Darray(int r, int c){
 }
 
 double euclideanDistance(double* p, double* q, int d) {
+    /*squared euclidian dist*/
     double diff, sum = 0.0;
     int i;
     for (i = 0; i < d; i++) {
         diff = p[i] - q[i];
         sum += diff * diff;
     }
-    return sqrt(sum);
+    return sum;
 }
 matrix * sym(point* points, int n, int d) {
     /* Allocate memory for the similarity matrix A*/
@@ -274,28 +275,7 @@ matrix * create_matrix(double ** arr, int r, int c){
     return new;
 }
 
-double mulSum(double* arr1, double* arr2, int l){
-   int i;
-   double cnt = 0.0;
-   for(i = 0; i < l; i++){
-       cnt += arr1[i] * arr2[i];
-   }
-   return cnt;
-}
 
-double * getCol(matrix* mat, int index){
-    int i;
-    int len = mat->r;
-    double * col = (double*)malloc(len * sizeof(double));
-    if(checkMemoryAllocation(col)==0){
-        freeMatrix(mat);
-        exit(1);
-    }
-    for(i = 0; i < len; i++){
-        col[i] = get(mat, i, index);
-    }
-    return col;
-}
 
 void printMat(matrix * m){
     int i,j,n;
@@ -308,34 +288,7 @@ void printMat(matrix * m){
     }
 }
 
-/*matrix* matMul2(matrix* m1, matrix* m2){
-    int i, j;
-    double * col;
-    double** ans;
-    int r1 = m1->r;
-    int r2 = m2->r;
-    int c1 = m1->c;
-    int c2 = m2->c;
-    
-    if(c1 != r2){
-        printf("sizes dont match");
-    }
-    ans = build2Darray(r1,c2);
-    if(!ans){
-        freeMatrix(m1);
-        freeMatrix(m2);
-        return NULL;
-    }
-    
-    for (i = 0; i < r1; i++){
-        for (j = 0; j < c2; j++){
-            col = getCol(m2, j);
-            ans[i][j] = mulSum((m1->data)[i], col, r2);
-        }
-    }
-    return create_matrix(ans, r1, c2);
-}
-*/
+
 
 matrix* matMul(matrix* m1, matrix* m2){
     int i, j, k;
