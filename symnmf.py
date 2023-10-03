@@ -1,5 +1,4 @@
 import numpy as np
-#import pandas as pd
 import math
 import sys
 import mysymnmf
@@ -122,11 +121,12 @@ def main():
         k = int(sys.argv[1])
         goal = sys.argv[2]
         file_path = sys.argv[3]
-        df = pd.read_csv(file_path, sep=",", header=None)
-        points = df.values
-        n = points.shape[0]
-        d = points.shape[1]
-        H = run(goal, points.tolist(), k)
+        points = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                point = [float(num) for num in line.split(',')]
+                points.append(point)
+        H = run(goal, points, k)
         for i in range(len(H)):
             s = [f'{num:.4f}' for num in H[i]]
             print(*s, sep = ",") 
