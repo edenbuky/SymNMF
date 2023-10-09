@@ -148,7 +148,7 @@ matrix* norm(matrix* A, matrix* D) {
     diagPow(D);
     tmp = matMul(D, A);
     W = matMul(tmp, D);
-
+    freeMatrix(tmp);
     return W;
 }
 
@@ -392,6 +392,9 @@ matrix* oneIter(matrix * H, matrix * W){
             arr[i][j] = (H->data)[i][j] * (1 - b + tmp);
         }
      }
+     freeMatrix(mone);
+     freeMatrix(mehane);
+     freeMatrix(H_t);
      return create_matrix(arr, r, c);
 
 }
@@ -423,10 +426,8 @@ matrix * updateH(matrix *H, matrix *W){
         iter --;
         H_old = H_new;
         
-        
     }
     while((fNorm >= EPSILON) && (iter > 0));
-
     return H_new;
 
 }
